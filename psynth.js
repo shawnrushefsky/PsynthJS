@@ -172,6 +172,7 @@ function(){
             }
             if(update)
             {
+                node.created = true;
                 var q = node.object();
                 q.query = 'newnode';
                 theGraph.queue(q, callback);
@@ -307,6 +308,7 @@ function(){
                 }
                 if(update)
                 {
+                    link.created = true;
                     var q = link.object();
                     q.query = 'newrel';
                     theGraph.queue(q, callback);
@@ -417,6 +419,7 @@ function(){
             linkTypes[linktype.name] = linktype;
             if(update)
             {
+                linktype.created =  true;
                 var q = linktype.object();
                 q.query = "newreltype";
                 theGraph.queue(q, callback);
@@ -512,6 +515,7 @@ function(){
                 }
                 if(update)
                 {
+                    detail.created = true;
                     var q = detail.object();
                     q.query = "newdetail";
                     theGraph.queue(q, callback);
@@ -951,6 +955,13 @@ function(){
         this.graph;
 
         /**
+         * Identifies whether this node has been created yet in the server.
+         * @type {boolean}
+         * @default false
+         */
+        this.created = false;
+
+        /**
          * Attaches a [Detail]{@link Psynth.Detail} to this Node, and returns it.
          * @param {Psynth.Detail|object} detail - Either a [Detail]{@link Psynth.Detail} object, or parameters for the constuction of one.
          * @returns {Psynth.Detail}
@@ -1318,6 +1329,13 @@ function(){
         this.graph;
 
         /**
+         * Identifies whether this Link has been created yet in the server.
+         * @type {boolean}
+         * @default false
+         */
+        this.created = false;
+
+        /**
          * Attaches a [Detail]{@link Psynth.Detail} to this Link, and returns it.
          * @param detail
          * @return {Psynth.Detail}
@@ -1599,6 +1617,14 @@ function(){
         this.graph;
 
         /**
+         * Indicates whether this LinkType has been created yet in the server.
+         * @type {boolean}
+         * @default false
+         */
+        this.created = false;
+
+
+        /**
          * @typedef simpleLinkType
          * @type {object}
          * @property {string} NAME
@@ -1761,6 +1787,13 @@ function(){
          * @type {Psynth.Graph}
          */
         this.graph;
+
+        /**
+         * Indicates whether this Detail has been created yet in the server.
+         * @type {boolean}
+         * @default false
+         */
+        this.created = false;
 
         /**
          * Returns the [Node]{@link Psynth.Node} or [Link]{@link Psynth.Link} that this Detail is anchored to. Returns -1 if the anchor is invalid.

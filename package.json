@@ -1,23 +1,29 @@
 {
-    "name": "psynthjs",
-    "version": "0.1.0",
-    "description": "An open-source library for creating graphs in Psymphonic Psynth.",
-    "main": "psynth.js",
-    "repository": {
-        "type": "git",
-        "url": "git://github.com/shawnrushefsky/PsynthJS.git"
-    },
-    "keywords": [
-        "graph",
-        "psynth",
-        "psymphonic",
-        "graphdb",
-        "database",
-        "diagram",
-        "map",
-        "chart"
-    ],
-    "author": "Shawn Rushefsky <shawn@psymphonic.com> (http://psymphonic.com/)",
-    "license": "MIT",
-    "bugs": "https://github.com/shawnrushefsky/PsynthJS/issues"
+  "name": "psynthjs",
+  "version": "0.1.0",
+  "description": "An open-source library for creating graphs in Psymphonic Psynth.",
+  "main": "psynth.js",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/shawnrushefsky/PsynthJS.git"
+  },
+  "keywords": [
+    "graph",
+    "psynth",
+    "psymphonic",
+    "graphdb",
+    "database",
+    "diagram",
+    "map",
+    "chart"
+  ],
+  "author": "Shawn Rushefsky <shawn@psymphonic.com> (http://psymphonic.com/)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/shawnrushefsky/PsynthJS/issues"
+  },
+  "homepage": "http://shawnrushefsky.github.io/PsynthJS/",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
 }
