@@ -2,15 +2,33 @@
  * Created by psymac0 on 5/3/15.
  */
 
-
+if(typeof module !== 'undefined')
+{
+    var https = require('https');
+    process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+    var $ = {get: function(url, callback)
+    {
+        //console.log(url);
+        https.get(url, function(response){
+            var body = '';
+            response.on('data', function(d){
+                body += d;
+            });
+            response.on('end', function(){
+                //console.log(body);
+                callback(body);
+            })
+        })
+    }}
+}
 /**
  * @namespace {{createGraph, loadGraph, Node, UID, Link, LinkType, Detail}} Psynth
  */
-var Psynth = /**
+var p = /**
  *
  * @type {{createGraph, loadGraph, Node, UID, Link, LinkType, Detail}}
  */
-(function(){
+function(){
 
     /**
      * This constructor cannot be directly accessed, but instead should be accessed through the {@link Psynth.createGraph} or {@link Psynth.loadGraph} methods.
@@ -633,7 +651,8 @@ var Psynth = /**
             };
             var x = theGraph.minX()+.1;
             var y = theGraph.minY()+.1;
-            var q = {query: 'publish', x: x, y: y, scale: window.innerHeight/theGraph.height()};
+
+            var q = {query: 'publish', x: x, y: y, scale: 1080/theGraph.height()};
 
             theGraph.queue(q, handler);
         };
@@ -861,7 +880,7 @@ var Psynth = /**
 
         if(params.uid === undefined || params.uid === "default")
         {
-            params.uid = Psynth.UID();
+            params.uid = p().UID();
         }
         else
         {
@@ -1249,7 +1268,7 @@ var Psynth = /**
         }
         if(params.uid === undefined || params.uid === 'default')
         {
-            params.uid = Psynth.UID();
+            params.uid = p().UID();
         }
         else
         {
@@ -1678,7 +1697,7 @@ var Psynth = /**
         }
         if(params.uid === undefined || params.uid === "default")
         {
-            params.uid = Psynth.UID();
+            params.uid = p().UID();
         }
         else
         {
@@ -1920,7 +1939,7 @@ var Psynth = /**
          * @memberof Psynth
          * @returns {string}
          * @example
-         * var uid = Psynth.UID();
+         * var uid = p().UID();
          * //uid === 'b8e1241a-c90c-46ca-a55e-6cbb9145ab19'
          */
         UID: function(){
@@ -1946,4 +1965,15 @@ var Psynth = /**
         }
     };
 
-}());
+};
+
+if(typeof module === 'undefined')
+{
+    console.log('window mode');
+    window.Psynth = p();
+}
+else if(typeof module !== 'undefined' && module.exports)
+{
+    console.log('node mode');
+    module.exports = p();
+}
