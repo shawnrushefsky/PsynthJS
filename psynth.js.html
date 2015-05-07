@@ -29,15 +29,33 @@
  * Created by psymac0 on 5/3/15.
  */
 
-
+if(typeof module !== 'undefined')
+{
+    var https = require('https');
+    process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+    var $ = {get: function(url, callback)
+    {
+        //console.log(url);
+        https.get(url, function(response){
+            var body = '';
+            response.on('data', function(d){
+                body += d;
+            });
+            response.on('end', function(){
+                //console.log(body);
+                callback(body);
+            })
+        })
+    }}
+}
 /**
  * @namespace {{createGraph, loadGraph, Node, UID, Link, LinkType, Detail}} Psynth
  */
-var Psynth = /**
+var p = /**
  *
  * @type {{createGraph, loadGraph, Node, UID, Link, LinkType, Detail}}
  */
-(function(){
+function(){
 
     /**
      * This constructor cannot be directly accessed, but instead should be accessed through the {@link Psynth.createGraph} or {@link Psynth.loadGraph} methods.
@@ -45,13 +63,13 @@ var Psynth = /**
      * @param {string} params.name - The name of this Graph.
      * @param {string} params.filename - The filename of this Graph. Must be unique to your Psynth server. This is assigned by the server.
      * @param {string} params.username - A Psynth username authorized to access the graph.
-     * @param {string} params.password - A password which matches the username.
+     * @param {string} params.key - A key which matches the username.
      * @param {string} params.url - The base URL for your Psynth server. e.g. https://psynth.psymphonic.com/
      * @constructor
      * @memberof Psynth
      * @example
      * var g = new Graph({name: 'My Graph', filename: 'b8e1241a-c90c-46ca-a55e-6cbb9145ab19.gt',
-     *                           username: 'myusername', password: 'mypassword', url: 'https://psynth.psymphonic.com'}
+     *                           username: 'myusername', key: 'mykey', url: 'https://psynth.psymphonic.com'}
      */
     function Graph(params)
     {
@@ -76,10 +94,10 @@ var Psynth = /**
         this.username = params.username;
 
         /**
-         * The password which matches the username.
+         * The key which matches the username.
          * @type {string}
          */
-        this.password = params.password;
+        this.key = params.key;
 
         /**
          * The url of your psynth server.  e.g. https://psynth.psymphonic.com/
@@ -101,7 +119,8 @@ var Psynth = /**
             if(queryQueue.length > 0)
             {
                 var q = queryQueue.shift();
-                $.get(theGraph.url+'crunch/'+JSON.stringify(idTag(q.query)), function(r){
+                $.get(theGraph.url+'api/'+JSON.stringify(idTag(q.query)), function(r, status){
+                    console.log(status)
                     r = JSON.parse(r);
                     if(r !== "invalid")
                     {
@@ -124,7 +143,7 @@ var Psynth = /**
         {
             obj.user = theGraph.username;
             obj.filename = theGraph.filename;
-            obj.password = theGraph.password;
+            obj.key = theGraph.key;
             return obj;
         };
 
@@ -181,6 +200,7 @@ var Psynth = /**
             }
             if(update)
             {
+                node.created = true;
                 var q = node.object();
                 q.query = 'newnode';
                 theGraph.queue(q, callback);
@@ -316,6 +336,7 @@ var Psynth = /**
                 }
                 if(update)
                 {
+                    link.created = true;
                     var q = link.object();
                     q.query = 'newrel';
                     theGraph.queue(q, callback);
@@ -426,6 +447,7 @@ var Psynth = /**
             linkTypes[linktype.name] = linktype;
             if(update)
             {
+                linktype.created =  true;
                 var q = linktype.object();
                 q.query = "newreltype";
                 theGraph.queue(q, callback);
@@ -521,6 +543,7 @@ var Psynth = /**
                 }
                 if(update)
                 {
+                    detail.created = true;
                     var q = detail.object();
                     q.query = "newdetail";
                     theGraph.queue(q, callback);
@@ -660,7 +683,8 @@ var Psynth = /**
             };
             var x = theGraph.minX()+.1;
             var y = theGraph.minY()+.1;
-            var q = {query: 'publish', x: x, y: y, scale: window.innerHeight/theGraph.height()};
+
+            var q = {query: 'publish', x: x, y: y, scale: 1080/theGraph.height()};
 
             theGraph.queue(q, handler);
         };
@@ -888,7 +912,7 @@ var Psynth = /**
 
         if(params.uid === undefined || params.uid === "default")
         {
-            params.uid = Psynth.UID();
+            params.uid = p().UID();
         }
         else
         {
@@ -957,6 +981,13 @@ var Psynth = /**
          * @type {Psynth.Graph}
          */
         this.graph;
+
+        /**
+         * Identifies whether this node has been created yet in the server.
+         * @type {boolean}
+         * @default false
+         */
+        this.created = false;
 
         /**
          * Attaches a [Detail]{@link Psynth.Detail} to this Node, and returns it.
@@ -1276,7 +1307,7 @@ var Psynth = /**
         }
         if(params.uid === undefined || params.uid === 'default')
         {
-            params.uid = Psynth.UID();
+            params.uid = p().UID();
         }
         else
         {
@@ -1326,6 +1357,13 @@ var Psynth = /**
         this.graph;
 
         /**
+         * Identifies whether this Link has been created yet in the server.
+         * @type {boolean}
+         * @default false
+         */
+        this.created = false;
+
+        /**
          * Attaches a [Detail]{@link Psynth.Detail} to this Link, and returns it.
          * @param detail
          * @return {Psynth.Detail}
@@ -1338,23 +1376,6 @@ var Psynth = /**
         {
             detail.anchor_type = me.type;
             detail.anchor_uid = me.uid;
-            if(detail.x === undefined)
-            {
-                detail.x = me.x+me.radius+4;
-            }
-            if(detail.y === undefined)
-            {
-                var num = 0;
-                var dets = me.graph.detailList();
-                for(var i = 0; i &lt; dets.length; i++)
-                {
-                    if(dets[i].anchor_uid === me.anchor_uid)
-                    {
-                        num++;
-                    }
-                }
-                detail.y = me.y+me.radius+(20*num);
-            }
             return me.graph.addDetail(detail);
         };
 
@@ -1607,6 +1628,14 @@ var Psynth = /**
         this.graph;
 
         /**
+         * Indicates whether this LinkType has been created yet in the server.
+         * @type {boolean}
+         * @default false
+         */
+        this.created = false;
+
+
+        /**
          * @typedef simpleLinkType
          * @type {object}
          * @property {string} NAME
@@ -1705,7 +1734,7 @@ var Psynth = /**
         }
         if(params.uid === undefined || params.uid === "default")
         {
-            params.uid = Psynth.UID();
+            params.uid = p().UID();
         }
         else
         {
@@ -1769,6 +1798,13 @@ var Psynth = /**
          * @type {Psynth.Graph}
          */
         this.graph;
+
+        /**
+         * Indicates whether this Detail has been created yet in the server.
+         * @type {boolean}
+         * @default false
+         */
+        this.created = false;
 
         /**
          * Returns the [Node]{@link Psynth.Node} or [Link]{@link Psynth.Link} that this Detail is anchored to. Returns -1 if the anchor is invalid.
@@ -1836,13 +1872,13 @@ var Psynth = /**
          * @param {object} params
          * @param {string} params.url - The base URL for your Psynth server. e.g. https://psynth.psymphonic.com/
          * @param {string} params.username - Your Psynth username.
-         * @param {string} params.password - Your Psynth password.
+         * @param {string} params.key - Your Psynth api key.
          * @param {string} params.name - The name of the the new Graph.
          * @param {function} handler - A callback function that will receive the Graph when it is returned from the server.
          * @memberof Psynth
          * @example
          * var graphParameters = {name: 'test map',username: 'myusername',
-         *                        password: 'mypassword', url: 'https://psynth.psymphonic.com/'};
+         *                        key: 'mykey', url: 'https://psynth.psymphonic.com/'};
          * function MyFunction(graph){
          *      //your code
          * }
@@ -1851,8 +1887,8 @@ var Psynth = /**
         createGraph: function(params, handler)
         {
             var g = new Graph(params);
-            var q = {query: 'createmap', user: g.username, password: g.password, name: g.name};
-            $.get(g.url + 'p/'+JSON.stringify(q), function(r){
+            var q = {query: 'createmap', user: g.username, key: g.key, name: g.name};
+            $.get(g.url + 'api/'+JSON.stringify(q), function(r){
                 r = JSON.parse(r);
                 g.filename = r.filename;
                 handler(g);
@@ -1864,13 +1900,13 @@ var Psynth = /**
          * @param params
          * @param {string} params.url - The base URL for your Psynth server. e.g. https://psynth.psymphonic.com/
          * @param {string} params.username - Your Psynth username.
-         * @param {string} params.password - Your Psynth password.
+         * @param {string} params.key - Your Psynth api key.
          * @param {string} params.filename - The filename of the the Graph to load.
          * @param {function} handler - A callback function that will receive the Graph when it is returned from the server.
          * @memberof Psynth
          * @example
          * var graphParameters = {filename: 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx.gt',username: 'myusername',
-         *                        password: 'mypassword', url: 'https://psynth.psymphonic.com/'};
+         *                        key: 'mykey', url: 'https://psynth.psymphonic.com/'};
          * function MyFunction(graph){
          *      //your code
          * }
@@ -1879,7 +1915,7 @@ var Psynth = /**
         loadGraph: function(params, handler)
         {
             var g = new Graph(params);
-            $.get(g.url+'crunch/'+JSON.stringify({query: 'getwholegraph', filename: g.filename, user: g.username, password: g.password}), function(e)
+            $.get(g.url+'api/'+JSON.stringify({query: 'getwholegraph', filename: g.filename, user: g.username, key: g.key}), function(e)
             {
                 e = JSON.parse(e);
                 if(e !== undefined)
@@ -1893,7 +1929,7 @@ var Psynth = /**
                             icon: e.rel_types[i].ICON,
                             tile: e.rel_types[i].TILE,
                             color: e.rel_types[i].COLOR
-                        }))
+                        }), undefined, false)
                     }
                     for(var i = 0; i &lt; e.nodes.length; i++)
                     {
@@ -1906,7 +1942,7 @@ var Psynth = /**
                             color: e.nodes[i].COLOR,
                             image: e.nodes[i].PICTURE,
                             uid: e.nodes[i].UID
-                        });
+                        }, undefined, false);
                     }
                     for(var i = 0; i &lt; e.rels.length; i++)
                     {
@@ -1917,7 +1953,7 @@ var Psynth = /**
                             origin_uid: e.rels[i].ORIGIN,
                             terminus_uid: e.rels[i].TERMINUS,
                             uid: e.rels[i].UID
-                        });
+                        }, undefined, false);
                     }
                     for(var i = 0; i &lt; e.details.length; i++)
                     {
@@ -1930,7 +1966,7 @@ var Psynth = /**
                             uid: e.details[i].UID,
                             x: e.details[i].X,
                             y: e.details[i].Y
-                        });
+                        }, undefined, false);
                     }
                     handler(g);
                 }
@@ -1947,7 +1983,7 @@ var Psynth = /**
          * @memberof Psynth
          * @returns {string}
          * @example
-         * var uid = Psynth.UID();
+         * var uid = p().UID();
          * //uid === 'b8e1241a-c90c-46ca-a55e-6cbb9145ab19'
          */
         UID: function(){
@@ -1973,7 +2009,18 @@ var Psynth = /**
         }
     };
 
-}());
+};
+
+if(typeof module === 'undefined')
+{
+    console.log('window mode');
+    window.Psynth = p();
+}
+else if(typeof module !== 'undefined' && module.exports)
+{
+    console.log('node mode');
+    module.exports = p();
+}
 </code></pre>
         </article>
     </section>
@@ -1984,13 +2031,13 @@ var Psynth = /**
 </div>
 
 <nav>
-    <h2><a href="index.html">Index</a></h2><h3>Classes</h3><ul><li><a href="Psynth.Detail.html">Detail</a></li><li><a href="Psynth.Graph.html">Graph</a></li><li><a href="Psynth.Link.html">Link</a></li><li><a href="Psynth.LinkType.html">LinkType</a></li><li><a href="Psynth.Node.html">Node</a></li></ul><h3>Namespaces</h3><ul><li><a href="Psynth.html">Psynth</a></li></ul><h3><a href="global.html">Global</a></h3>
+    <h2><a href="index.html">Index</a></h2><h3>Classes</h3><ul><li><a href="Psynth.Detail.html">Detail</a></li><li><a href="Psynth.Graph.html">Graph</a></li><li><a href="Psynth.Link.html">Link</a></li><li><a href="Psynth.LinkType.html">LinkType</a></li><li><a href="Psynth.Node.html">Node</a></li></ul><h3>Namespaces</h3><ul><li><a href="Psynth.html">Psynth</a></li></ul><h3>Global</h3><ul><li><a href="global.html#https">https</a></li></ul>
 </nav>
 
 <br clear="both">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.2.2</a> on Tue May 05 2015 11:54:11 GMT-0500 (CDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.2.2</a> on Thu May 07 2015 13:21:01 GMT-0500 (CDT)
 </footer>
 
 <script> prettyPrint(); </script>
