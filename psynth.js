@@ -36,13 +36,13 @@ function(){
      * @param {string} params.name - The name of this Graph.
      * @param {string} params.filename - The filename of this Graph. Must be unique to your Psynth server. This is assigned by the server.
      * @param {string} params.username - A Psynth username authorized to access the graph.
-     * @param {string} params.password - A password which matches the username.
+     * @param {string} params.key - A key which matches the username.
      * @param {string} params.url - The base URL for your Psynth server. e.g. https://psynth.psymphonic.com/
      * @constructor
      * @memberof Psynth
      * @example
      * var g = new Graph({name: 'My Graph', filename: 'b8e1241a-c90c-46ca-a55e-6cbb9145ab19.gt',
-     *                           username: 'myusername', password: 'mypassword', url: 'https://psynth.psymphonic.com'}
+     *                           username: 'myusername', key: 'mykey', url: 'https://psynth.psymphonic.com'}
      */
     function Graph(params)
     {
@@ -67,10 +67,10 @@ function(){
         this.username = params.username;
 
         /**
-         * The password which matches the username.
+         * The key which matches the username.
          * @type {string}
          */
-        this.password = params.password;
+        this.key = params.key;
 
         /**
          * The url of your psynth server.  e.g. https://psynth.psymphonic.com/
@@ -92,7 +92,8 @@ function(){
             if(queryQueue.length > 0)
             {
                 var q = queryQueue.shift();
-                $.get(theGraph.url+'crunch/'+JSON.stringify(idTag(q.query)), function(r){
+                $.get(theGraph.url+'api/'+JSON.stringify(idTag(q.query)), function(r, status){
+                    console.log(status)
                     r = JSON.parse(r);
                     if(r !== "invalid")
                     {
@@ -115,7 +116,7 @@ function(){
         {
             obj.user = theGraph.username;
             obj.filename = theGraph.filename;
-            obj.password = theGraph.password;
+            obj.key = theGraph.key;
             return obj;
         };
 
@@ -1348,23 +1349,6 @@ function(){
         {
             detail.anchor_type = me.type;
             detail.anchor_uid = me.uid;
-            if(detail.x === undefined)
-            {
-                detail.x = me.x+me.radius+4;
-            }
-            if(detail.y === undefined)
-            {
-                var num = 0;
-                var dets = me.graph.detailList();
-                for(var i = 0; i < dets.length; i++)
-                {
-                    if(dets[i].anchor_uid === me.anchor_uid)
-                    {
-                        num++;
-                    }
-                }
-                detail.y = me.y+me.radius+(20*num);
-            }
             return me.graph.addDetail(detail);
         };
 
@@ -1861,13 +1845,13 @@ function(){
          * @param {object} params
          * @param {string} params.url - The base URL for your Psynth server. e.g. https://psynth.psymphonic.com/
          * @param {string} params.username - Your Psynth username.
-         * @param {string} params.password - Your Psynth password.
+         * @param {string} params.key - Your Psynth api key.
          * @param {string} params.name - The name of the the new Graph.
          * @param {function} handler - A callback function that will receive the Graph when it is returned from the server.
          * @memberof Psynth
          * @example
          * var graphParameters = {name: 'test map',username: 'myusername',
-         *                        password: 'mypassword', url: 'https://psynth.psymphonic.com/'};
+         *                        key: 'mykey', url: 'https://psynth.psymphonic.com/'};
          * function MyFunction(graph){
          *      //your code
          * }
@@ -1876,8 +1860,8 @@ function(){
         createGraph: function(params, handler)
         {
             var g = new Graph(params);
-            var q = {query: 'createmap', user: g.username, password: g.password, name: g.name};
-            $.get(g.url + 'p/'+JSON.stringify(q), function(r){
+            var q = {query: 'createmap', user: g.username, key: g.key, name: g.name};
+            $.get(g.url + 'api/'+JSON.stringify(q), function(r){
                 r = JSON.parse(r);
                 g.filename = r.filename;
                 handler(g);
@@ -1889,13 +1873,13 @@ function(){
          * @param params
          * @param {string} params.url - The base URL for your Psynth server. e.g. https://psynth.psymphonic.com/
          * @param {string} params.username - Your Psynth username.
-         * @param {string} params.password - Your Psynth password.
+         * @param {string} params.key - Your Psynth api key.
          * @param {string} params.filename - The filename of the the Graph to load.
          * @param {function} handler - A callback function that will receive the Graph when it is returned from the server.
          * @memberof Psynth
          * @example
          * var graphParameters = {filename: 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx.gt',username: 'myusername',
-         *                        password: 'mypassword', url: 'https://psynth.psymphonic.com/'};
+         *                        key: 'mykey', url: 'https://psynth.psymphonic.com/'};
          * function MyFunction(graph){
          *      //your code
          * }
@@ -1904,7 +1888,7 @@ function(){
         loadGraph: function(params, handler)
         {
             var g = new Graph(params);
-            $.get(g.url+'crunch/'+JSON.stringify({query: 'getwholegraph', filename: g.filename, user: g.username, password: g.password}), function(e)
+            $.get(g.url+'api/'+JSON.stringify({query: 'getwholegraph', filename: g.filename, user: g.username, key: g.key}), function(e)
             {
                 e = JSON.parse(e);
                 if(e !== undefined)
@@ -1918,7 +1902,7 @@ function(){
                             icon: e.rel_types[i].ICON,
                             tile: e.rel_types[i].TILE,
                             color: e.rel_types[i].COLOR
-                        }))
+                        }), undefined, false)
                     }
                     for(var i = 0; i < e.nodes.length; i++)
                     {
@@ -1931,7 +1915,7 @@ function(){
                             color: e.nodes[i].COLOR,
                             image: e.nodes[i].PICTURE,
                             uid: e.nodes[i].UID
-                        });
+                        }, undefined, false);
                     }
                     for(var i = 0; i < e.rels.length; i++)
                     {
@@ -1942,7 +1926,7 @@ function(){
                             origin_uid: e.rels[i].ORIGIN,
                             terminus_uid: e.rels[i].TERMINUS,
                             uid: e.rels[i].UID
-                        });
+                        }, undefined, false);
                     }
                     for(var i = 0; i < e.details.length; i++)
                     {
@@ -1955,7 +1939,7 @@ function(){
                             uid: e.details[i].UID,
                             x: e.details[i].X,
                             y: e.details[i].Y
-                        });
+                        }, undefined, false);
                     }
                     handler(g);
                 }

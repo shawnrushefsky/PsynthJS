@@ -1,7 +1,7 @@
 {
   "name": "psynthjs",
-  "version": "0.1.0",
-  "description": "An open-source library for creating graphs in Psymphonic Psynth.",
+  "version": "0.1.1",
+  "description": "This is the offical javascript library for creating graphs in Psymphonic Psynth.",
   "main": "psynth.js",
   "repository": {
     "type": "git",
