@@ -1,0 +1,8 @@
+{
+  "name": "psynthjs",
+  "version": "0.1.2",
+  "main": "psynth.js",
+  "dependencies": {
+    "jquery": "2.1.4"
+  }
+}
