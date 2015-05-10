@@ -92,8 +92,8 @@ function(){
             if(queryQueue.length > 0)
             {
                 var q = queryQueue.shift();
-                $.get(theGraph.url+'api/'+JSON.stringify(idTag(q.query)), function(r, status){
-                    console.log(status)
+                $.get(theGraph.url+'api/'+JSON.stringify(idTag(q.query)), function(r){
+
                     r = JSON.parse(r);
                     if(r !== "invalid")
                     {
@@ -491,11 +491,11 @@ function(){
         this.addDetail = function(detail, callback, update)
         {
             update = update || true;
-            if(detail.anchor_type === "Node" &&!(detail.anchor_uid in nodeIndex))
+            if(detail.anchor_type in ["Node", "node"] &&!(detail.anchor_uid in nodeIndex))
             {
                 throw "Invalid anchor Node."
             }
-            else if(detail.anchor_type === "Link" &&!(detail.anchor_uid in linkIndex))
+            else if(detail.anchor_type in ["Link", "link", "rel"] &&!(detail.anchor_uid in linkIndex))
             {
                 throw "Invalid anchor Link."
             }
@@ -973,7 +973,7 @@ function(){
          */
         this.addDetail = function(detail)
         {
-            detail.anchor_type = me.type;
+            detail.anchor_type = 'node';
             detail.anchor_uid = me.uid;
             if(detail.x === undefined)
             {
@@ -985,7 +985,7 @@ function(){
                 var dets = me.graph.detailList();
                 for(var i = 0; i < dets.length; i++)
                 {
-                    if(dets[i].anchor_uid === me.anchor_uid)
+                    if(dets[i].anchor_uid === me.uid)
                     {
                         num++;
                     }
@@ -1347,8 +1347,25 @@ function(){
          */
         this.addDetail = function(detail)
         {
-            detail.anchor_type = me.type;
+            detail.anchor_type = 'rel';
             detail.anchor_uid = me.uid;
+            if(detail.x === undefined)
+            {
+                detail.x = me.center().x + 10;
+            }
+            if(detail.y === undefined)
+            {
+                var num = 0;
+                var dets = me.graph.detailList();
+                for(var i = 0; i < dets.length; i++)
+                {
+                    if(dets[i].anchor_uid === me.uid)
+                    {
+                        num++;
+                    }
+                }
+                detail.y = me.center().y + (20 * num);
+            }
             return me.graph.addDetail(detail);
         };
 
@@ -1487,6 +1504,32 @@ function(){
             q.query = "updaterel";
             me.graph.queue(q, callback);
         };
+
+        /**
+         * Returns the point at the center of the Link.  {x, y}
+         *
+         * @returns {{x: number, y: number}}
+         * @example
+         * detail.x = link.center().x+10;
+         */
+        this.center = function()
+        {
+            var x = (me.origin().x+me.terminus().x) / 2;
+            var y = (me.origin().y+me.terminus().y) / 2;
+            return {x: x, y: y}
+        };
+
+        /**
+         * Returns the LinkType object for this Link.
+         *
+         * @returns {Psynth.LinkType|number}
+         * @example
+         * var hue = link.linkType().color;
+         */
+        this.linkType = function()
+        {
+            return me.graph.linkType(me.type);
+        }
     }
 
     /**
@@ -1669,7 +1712,7 @@ function(){
      * @param {string} [params.name] - The name of this Detail. This is not currently used for anything on the front end.
      * @param {string} [params.uid] - A unique identifier for this Detail. Defaults to a global unique id.
      * @param {string} params.anchor_uid - The uid for the object this Detail is anchored to.
-     * @param {string} params.anchor_type - The type of object this Detail is anchored to. Currently supported are 'Link' and 'Node'
+     * @param {string} params.anchor_type - The type of object this Detail is anchored to. Currently supported are 'rel' and 'node'
      * @param {string} params.content - The content of this Detail.
      * @param {number} params.x - The x-coordinate of this Detail in Pixels. Assumes web-standard grid with (0,0) at (top,left).
      * @param {number} params.y - The y-coordinate of this Detail in Pixels. Assumes web-standard grid with (0,0) at (top,left).
@@ -1737,7 +1780,7 @@ function(){
         this.anchor_uid = params.anchor_uid;
 
         /**
-         * The type of object this Detail is anchored to. 'Node', 'Link'
+         * The type of object this Detail is anchored to. 'node', 'rel'
          * @type {string}
          */
         this.anchor_type = params.anchor_type;
@@ -1787,11 +1830,11 @@ function(){
          */
         this.anchor = function()
         {
-            if(me.anchor_type === "Node")
+            if(me.anchor_type === "node")
             {
                 return me.graph.node(me.anchor_uid);
             }
-            else if(me.anchor_type === "Link")
+            else if(me.anchor_type === "rel")
             {
                 return me.graph.link(me.anchor_uid);
             }
