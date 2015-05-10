@@ -48,14 +48,71 @@
 <h2>
 <a id="quickstart" class="anchor" href="#quickstart" aria-hidden="true"><span class="octicon octicon-link"></span></a>Quickstart</h2>
 
-<pre><code>var graphParameters = {name: 'test map',
-                       username: 'myusername',
-                       key: 'myapikey',
-                       url: 'https://psynth.psymphonic.com/'};
-function MyFunction(graph){
-     graph.addNode({name: "Sample Node"});
+<pre><code>// Include the Psynth package.
+var Psynth = require('psynthjs');
+
+// A shortcut function to get random integers.
+function getRandomInt (min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
 }
-Psynth.createGraph(graphParameters, MyFunction);
+
+// Define the Graph properties
+var graphInfo = {name: 'test map',
+                 username: 'myusername',
+                 key: 'myapikey',
+                 url: 'https://psynth.psymphonic.com/'};
+
+// Create the Graph
+Psynth.createGraph(graphInfo, function(g)
+{
+    // Create 10 Nodes.
+    for(var i = 0; i &lt; 10; i++)
+    {
+        g.addNode({name: 'Node '+i});
+    }
+
+    // Grab a list of all the Nodes.
+    var ns = g.nodeList();
+
+    // Create a default LinkType
+    var lt = g.addLinkType(new Psynth.LinkType());
+
+    // Create 30 random Links
+    for(var i = 0; i &lt; 30; i++)
+    {
+        var o = getRandomInt(0, ns.length-1);
+        var t = getRandomInt(0, ns.length-1);
+        while(t === o)
+        {
+            t = getRandomInt(0, ns.length-1);
+        }
+        g.addLink({name: 'Link '+i, origin_uid: ns[o].uid, terminus_uid: ns[t].uid, type: lt.name, value: getRandomInt(1, lt.max)});
+    }
+
+    // Grab a list of all the Links
+    var ls = g.linkList();
+
+    // Add 3 Details to each Node
+    for(var i = 0; i &lt; ns.length; i++)
+    {
+        for(var j = 0; j &lt; 3; j++)
+        {
+            ns[i].addDetail({content: 'http://psymphonic.com', type: 'link'});
+        }
+    }
+
+    // Add 3 Details to each Link
+    for(var i = 0; i &lt; ls.length; i++)
+    {
+        for(var j = 0; j &lt; 3; j++)
+        {
+            ls[i].addDetail({content: 'http://psymphonic.com', type: 'link'});
+        }
+    }
+
+    // Calculate a layout for the Graph.
+    g.draw();
+});
 </code></pre>
 
 <h3>
