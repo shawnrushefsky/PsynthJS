@@ -784,7 +784,7 @@ function(){
      * @param {number|string} [params.shape=6] - The shape of the Node. 0 for circle, 1 for image, otherwise the number
      *                                           of sides. Can also be 'circle','triangle','square','pentagon','hexagon','septagon','octagon'
      * @param {number} [params.radius=24] - The radius of the Node, in Pixels.
-     * @param {string} [params.color='default'] - A color string (e.g. #FFFFFF).  'default' will cause the node to color itself responsively with the user selected palette.
+     * @param {string} [params.color='dynamic'] - A color string (e.g. #FFFFFF).  'dynamic' will cause the node to color itself responsively with the user selected palette. 'static' will leave a node image's color unaffected.  This is displayed as a Photo setting in the GUI.
      * @param {string} [params.image='default'] - A url for an image to display on the Node.  Requires a shape of 1.
      * @param {string} [params.uid] - Defaults to global unique id.
      * @constructor
@@ -875,7 +875,7 @@ function(){
 
         if(params.color === undefined || params.color === "default")
         {
-            params.color = 'default';
+            params.color = 'dynamic';
         }
         else
         {
@@ -894,7 +894,7 @@ function(){
 
         if(params.image === undefined || params.image === 'default')
         {
-            params.image = 'default';
+            params.image = 'na';
         }
         else
         {
@@ -1539,8 +1539,9 @@ function(){
      * @param {string} [params.name='Links'] - The name of this LinkType.  Should be unique to this Graph.
      * @param {string} [params.icon='img/link_icon.png'] - A URL for an image to display as an icon for this LinkType. Should be 24x21 pixels, with a transparent background.
      * @param {string} [params.tile='img/link_tile.png'] - A URL for an image to display on the tiling sprite for this LinkType. Should be 100x21 pixels, with a transparent background.
-     * @param {string} [params.color='#1aa2d4'] - The color for this LinkType. Should be a string such as "#FFFFFF"
+     * @param {string} [params.color='dynamic'] - The color for this LinkType. Should be a string such as "#FFFFFF"  'dynamic' will make the color responsive to user palette changes.
      * @param {number} [params.max=10] - The maximum value any Link of this LinkType can have.  Must be >= 1.
+     * @param {boolean} [params.sync=true] - Whether the icons should reflect the color of the line.
      * @constructor
      * @memberof Psynth
      * @example <caption>Using the constructor directly</caption>
@@ -1595,11 +1596,15 @@ function(){
         }
         if(params.color === undefined || params.color === "default")
         {
-            params.color = '#1aa2d4';
+            params.color = 'dynamic';
         }
         else
         {
             params.color = decodeURIComponent(params.color);
+        }
+        if(params.sync === undefined || params.sync === "default")
+        {
+            params.sync = true;
         }
 
         /**
@@ -1638,6 +1643,12 @@ function(){
         this.color = params.color;
 
         /**
+         * Whether or not the icons for this link type should reflect the color.
+         * @type {boolean}
+         */
+        this.sync = params.sync;
+
+        /**
          * The graph to which this LinkType belongs.
          * @type {Psynth.Graph}
          */
@@ -1670,7 +1681,14 @@ function(){
          */
         this.object = function()
         {
-            return {NAME: encodeURIComponent(me.name), ICON: encodeURIComponent(me.icon), TILE: encodeURIComponent(me.tile), MAX: me.max, COLOR: encodeURIComponent(me.color)};
+            return {
+                NAME: encodeURIComponent(me.name),
+                ICON: encodeURIComponent(me.icon),
+                TILE: encodeURIComponent(me.tile),
+                MAX: me.max,
+                COLOR: encodeURIComponent(me.color),
+                SYNC: me.sync
+            };
         };
 
         /**
@@ -1944,7 +1962,8 @@ function(){
                             max: e.rel_types[i].MAX,
                             icon: e.rel_types[i].ICON,
                             tile: e.rel_types[i].TILE,
-                            color: e.rel_types[i].COLOR
+                            color: e.rel_types[i].COLOR,
+                            sync: e.rel_types[i].SYNC
                         }), undefined, false)
                     }
                     for(var i = 0; i < e.nodes.length; i++)
